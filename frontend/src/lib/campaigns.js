@@ -31,7 +31,10 @@ export function toCampaignRow(campaign, mails = []) {
   return {
     id: campaign.id,
     name: campaign.title,
-    subject: campaign.workMail ? `From ${campaign.workMail}` : "No sender yet",
+    subject:
+      campaign.subject ||
+      (campaign.workMail ? `From ${campaign.workMail}` : "No subject yet"),
+    body: campaign.body || "",
     status: normalizeCampaignStatus(campaign),
     sent: metrics.sent,
     opened: metrics.opened,

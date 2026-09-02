@@ -48,7 +48,19 @@ export async function api(path, { method = "GET", body, auth = true, token } = {
   }
 
   if (!response.ok) {
-    throw new ApiError(payload.error || payload.message || "Request failed", response.status, payload);
+    const proxy = payload.data && typeof payload.data === "object" ? payload.data : {};
+    const raw =
+      payload.error ||
+      payload.message ||
+      proxy.message ||
+      proxy.error ||
+      (typeof payload.data === "string" ? payload.data : "") ||
+      "";
+    const detail =
+      typeof raw === "string" && raw.trim()
+        ? raw.trim().replace(/\s+/g, " ").slice(0, 300)
+        : `Request failed (${response.status})`;
+    throw new ApiError(detail, response.status, payload);
   }
 
   return payload;
@@ -96,6 +108,7 @@ export const conversationApi = {
   create: (body = {}) => api("/api/conversations", { method: "POST", body }),
   messages: (id) => api(`/api/conversations/${id}/messages`),
   addMessage: (id, body) => api(`/api/conversations/${id}/messages`, { method: "POST", body }),
+  remove: (id) => api(`/api/conversations/${id}`, { method: "DELETE" }),
 };
 
 export const openaiApi = {

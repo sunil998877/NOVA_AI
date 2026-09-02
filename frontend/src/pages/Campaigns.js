@@ -10,7 +10,8 @@ import {
   Pencil,
   Copy,
   Trash2,
-  Play,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -46,6 +47,7 @@ function Campaigns() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [sendingId, setSendingId] = useState(null);
 
   const rows = useMemo(
     () => campaigns.map((campaign) => toCampaignRow(campaign, mails)),
@@ -113,6 +115,7 @@ function Campaigns() {
   };
 
   const handleStart = async (row) => {
+    setSendingId(row.id);
     setActionError("");
     try {
       await webhookApi.send({
@@ -124,6 +127,8 @@ function Campaigns() {
       await reload();
     } catch (err) {
       setActionError(err.message || "Could not start campaign");
+    } finally {
+      setSendingId(null);
     }
   };
 
@@ -187,7 +192,7 @@ function Campaigns() {
               <TableHead>Click Rate</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>From</TableHead>
-              <TableHead className="w-12" />
+              <TableHead className="w-[150px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -201,6 +206,11 @@ function Campaigns() {
                     <div>
                       <div className="font-medium">{campaign.name}</div>
                       <div className="text-xs text-muted-foreground">{campaign.subject}</div>
+                      {campaign.body ? (
+                        <div className="mt-0.5 line-clamp-1 max-w-[340px] text-xs text-muted-foreground/70">
+                          {campaign.body}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 </TableCell>
@@ -227,43 +237,57 @@ function Campaigns() {
                   <Badge variant="outline" className="border-primary/30 text-primary">{campaign.list}</Badge>
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="size-8">
-                        <EllipsisVertical className="size-4" />
+                  <div className="flex items-center justify-end gap-1.5">
+                    {campaign.status !== "sent" ? (
+                      <Button
+                        size="sm"
+                        className="h-8 gap-1.5"
+                        disabled={sendingId === campaign.id}
+                        onClick={() => handleStart(campaign)}
+                      >
+                        {sendingId === campaign.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Send className="size-3.5" />
+                        )}
+                        {sendingId === campaign.id ? "Sending..." : "Send"}
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate("/email-tracking")}>
-                        <Eye /> Preview
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/campaign-analytics")}>
-                        <ChartBar /> Analytics
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setEditing(campaign.raw);
-                          setFormError("");
-                          setShowModal(true);
-                        }}
-                      >
-                        <Pencil /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleStart(campaign)}>
-                        <Play /> Start send
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDuplicate(campaign)}>
-                        <Copy /> Duplicate
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive"
-                        onClick={() => handleDelete(campaign.id)}
-                      >
-                        <Trash2 /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    ) : null}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <EllipsisVertical className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate("/email-tracking")}>
+                          <Eye /> Preview
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/campaign-analytics")}>
+                          <ChartBar /> Analytics
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditing(campaign.raw);
+                            setFormError("");
+                            setShowModal(true);
+                          }}
+                        >
+                          <Pencil /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicate(campaign)}>
+                          <Copy /> Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => handleDelete(campaign.id)}
+                        >
+                          <Trash2 /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

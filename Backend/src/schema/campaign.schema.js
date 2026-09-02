@@ -1,8 +1,8 @@
 export const campaignSchema = {
     table: "campaigns",
     columns:
-        "id, title, workMail, followups, camp_status, scheduledDate, status, user_id, createdAt, updatedAt",
-    updatable: ["title", "workMail", "followups", "camp_status", "scheduledDate", "status"],
+        "id, title, workMail, followups, camp_status, scheduledDate, status, subject, body, user_id, createdAt, updatedAt",
+    updatable: ["title", "workMail", "followups", "camp_status", "scheduledDate", "status", "subject", "body"],
     createTable: `CREATE TABLE IF NOT EXISTS campaigns (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
@@ -11,6 +11,8 @@ export const campaignSchema = {
         camp_status VARCHAR(64) NOT NULL DEFAULT 'Pending',
         scheduledDate DATETIME NULL,
         status VARCHAR(64) NOT NULL DEFAULT 'draft',
+        subject VARCHAR(255) NULL,
+        body MEDIUMTEXT NULL,
         user_id INT NOT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

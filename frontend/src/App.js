@@ -28,7 +28,7 @@ function AppShell() {
       <AppSidebar />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-4 md:p-6 lg:p-8">
+        <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 pt-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
       </SidebarInset>

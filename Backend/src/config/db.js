@@ -21,6 +21,26 @@ export const execute = async (sql, params = []) => {
     return result;
 };
 
+async function migrateCampaignCopyColumns(pool) {
+    try {
+        const [rows] = await pool.query(
+            `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'campaigns' AND COLUMN_NAME IN ('subject', 'body')`
+        );
+        const existing = new Set(rows.map((row) => row.COLUMN_NAME));
+        if (!existing.has("subject")) {
+            await pool.query(
+                `ALTER TABLE campaigns ADD COLUMN subject VARCHAR(255) NULL AFTER status`
+            );
+        }
+        if (!existing.has("body")) {
+            await pool.query(`ALTER TABLE campaigns ADD COLUMN body MEDIUMTEXT NULL AFTER subject`);
+        }
+    } catch (error) {
+        console.error("Could not migrate campaigns subject/body columns:", error.message);
+    }
+}
+
 export const connectDb = async () => {
     const { host, port, user, password, database } = env.mysql;
 
@@ -45,6 +65,8 @@ export const connectDb = async () => {
             await pool.query(statement);
         }
 
+        await migrateCampaignCopyColumns(pool);
+
         console.log(`Connected to MySQL successfully (${database})`);
         return pool;
     } catch (error) {
@@ -56,4 +78,4 @@ export const connectDb = async () => {
         }
         process.exit(1);
     }
-};
+};

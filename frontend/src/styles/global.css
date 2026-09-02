@@ -161,16 +161,12 @@
   to { transform: rotate(360deg); }
 }
 
-/* ─── Mobile-only refinements (max-width queries only; desktop responsive code untouched) ─── */
-
-/* Landing hero headline — scale down so lines never overflow small phones */
 @media (max-width: 639px) {
   .landing-hero-title {
     font-size: clamp(1.75rem, 8vw, 2.5rem);
   }
 }
 
-/* Landing overview headline — let it wrap instead of w-max clipping, scale for phones */
 @media (max-width: 639px) {
   .landing-overview-title {
     width: 100%;
@@ -179,21 +175,18 @@
   }
 }
 
-/* Landing features headline — scale for small phones */
 @media (max-width: 639px) {
   .landing-features-title {
     font-size: clamp(1.9rem, 9vw, 2.6rem);
   }
 }
 
-/* Landing "Open NOVA" CTA headline — scale for small phones */
 @media (max-width: 639px) {
   .landing-cta-title {
     font-size: clamp(1.75rem, 8.5vw, 2.5rem);
   }
 }
 
-/* Film scene 2 (Audience segments) — shrink stacked cards so all three fit the film height below md */
 @media (max-width: 767px) {
   .film-audience-card {
     min-height: 155px;
@@ -204,7 +197,6 @@
   }
 }
 
-/* Film scene 3 (Telemetry) — tighten 3-column grid + stat text on small phones */
 @media (max-width: 479px) {
   .film-telemetry-grid {
     gap: 0.5rem;
@@ -224,9 +216,6 @@
   }
 }
 
-/* ---------- FilmExpand — mobile-only polish (≤639px; sm+ / desktop untouched) ---------- */
-
-/* HUD: hide the LIVE badge text on phones so the brand row never overflows */
 @media (max-width: 639px) {
   .film-hud-live-text {
     display: none;
@@ -239,7 +228,7 @@
     font-size: 0.55rem;
     letter-spacing: 0.08em;
   }
-  /* Message crafter + telemetry headers: let pills wrap instead of clipping */
+
   .film-msg-head,
   .film-telemetry-head {
     flex-wrap: wrap;
@@ -248,13 +237,12 @@
   }
 }
 
-/* Extra tightening for tiny phones (≤479px) */
 @media (max-width: 479px) {
-  /* Hero headline scales fluidly with the viewport */
+
   .film-hero-title {
     font-size: clamp(1.8rem, 9vw, 2.25rem);
   }
-  /* Audience cards even more compact on tiny phones */
+
   .film-audience-card {
     min-height: 132px;
     padding: 1rem;
@@ -262,7 +250,7 @@
   .film-audience-card p.text-2xl {
     font-size: 1.15rem;
   }
-  /* Telemetry: stack title above the streaming pill */
+
   .film-telemetry-head {
     flex-direction: column;
     align-items: flex-start;

@@ -7,10 +7,40 @@ export async function ensureConversation(title) {
   return conversationApi.create({ title });
 }
 
-export async function craftEmail({ prompt, tone, audience, conversationTitle = "Message Crafter" }) {
+export async function findConversation(title) {
+  const { data } = await conversationApi.list();
+  return (data || []).find((item) => item.title === title) || null;
+}
+
+export async function loadConversationMessages(title) {
+  const conversation = await findConversation(title);
+  if (!conversation) return { conversation: null, messages: [] };
+  const { data } = await conversationApi.messages(conversation.id);
+  return { conversation, messages: data || [] };
+}
+
+export async function generateEmail({
+  prompt,
+  context = false,
+  conversationTitle = "Message Crafter",
+}) {
   const conversation = await ensureConversation(conversationTitle);
+  const result = await openaiApi.generateMessage({
+    conversationId: conversation.id,
+    prompt,
+    context,
+  });
+  return { data: result.data, conversation };
+}
+
+export async function craftEmail({
+  prompt,
+  tone,
+  audience,
+  conversationTitle = "Message Crafter",
+}) {
   const composed = [
-    `Write a complete marketing email with a subject line.`,
+    "Write a complete marketing email with a subject line.",
     prompt ? `Goal: ${prompt}` : "",
     tone ? `Tone: ${tone}` : "",
     audience ? `Audience: ${audience}` : "",
@@ -18,9 +48,10 @@ export async function craftEmail({ prompt, tone, audience, conversationTitle = "
     .filter(Boolean)
     .join("\n");
 
-  const result = await openaiApi.generateMessage({
-    conversationId: conversation.id,
+  const { data } = await generateEmail({
     prompt: composed,
+    context: false,
+    conversationTitle,
   });
-  return result.data;
+  return data;
 }

@@ -1,6 +1,7 @@
 import { Campaign } from "../../models/campaign.model.js";
 import { audit } from "../../utils/audit.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { toMysqlDateTime } from "../../utils/datetime.js";
 
 export const createCampaign = asyncHandler(async (req, res) => {
     const {
@@ -13,6 +14,8 @@ export const createCampaign = asyncHandler(async (req, res) => {
         scheduledDate,
         scheduled_date,
         status,
+        subject,
+        body,
     } = req.body;
 
     const resolvedTitle = title || campaign_name;
@@ -25,8 +28,10 @@ export const createCampaign = asyncHandler(async (req, res) => {
         workMail: workMail ?? work_mail ?? null,
         followups: followups ?? "0",
         camp_status: camp_status ?? "Pending",
-        scheduledDate: scheduledDate ?? scheduled_date ?? null,
+        scheduledDate: toMysqlDateTime(scheduledDate ?? scheduled_date),
         status: status || "draft",
+        subject: subject ?? null,
+        body: body ?? null,
         user_id: req.user.id,
     });
 

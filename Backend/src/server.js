@@ -6,6 +6,9 @@ const syncServer = async () => {
     await connectDb();
     const server = app.listen(env.port, () => {
         console.log(`NovaAI backend is running on port ${env.port}`);
+        console.log(
+            `n8n main webhook: ${env.n8nMainWebhook || "(not configured)"}`
+        );
     });
     server.on("error", (error) => {
         console.error("Error starting the server:", error);

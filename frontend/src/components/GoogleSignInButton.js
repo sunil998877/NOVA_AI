@@ -17,11 +17,7 @@ function currentOriginPort() {
   return window.location.port || (window.location.protocol === "https:" ? "443" : "80");
 }
 
-// Google rejects any origin that isn't registered on the OAuth client being
-// used ("no registered origin" / invalid_client). The primary client
-// (REACT_APP_GOOGLE_CLIENT_ID) has http://localhost:3000 registered; Vite's
-// default dev port 5173 needs the ALT client (REACT_APP_GOOGLE_CLIENT_ID_ALT),
-// which the backend accepts too (GOOGLE_CLIENT_ID_ALT in Backend/.env).
+
 function clientIdForCurrentOrigin() {
   const port = currentOriginPort();
   const alt = String(process.env.REACT_APP_GOOGLE_CLIENT_ID_ALT || "").trim();

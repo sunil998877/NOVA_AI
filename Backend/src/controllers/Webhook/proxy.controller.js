@@ -50,7 +50,7 @@ export const proxyWebhook = asyncHandler(async (req, res) => {
     try {
         data = JSON.parse(text);
     } catch {
-        // n8n may return plain text
+
     }
 
     return res.status(response.status).json({

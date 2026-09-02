@@ -33,15 +33,27 @@ export const generateMessage = asyncHandler(async (req, res) => {
         content: prompt,
     });
 
+    const systemMessage = {
+        role: "system",
+        content: `You are NOVA, an expert email marketing copywriter. ${signature}`,
+    };
+
+    let aiMessages = [systemMessage];
+    if (req.body.context) {
+        const history = await Message.findByConversation(conversation.id);
+        const tail = history
+            .slice(-30)
+            .filter((item) => item.role === "user" || item.role === "assistant");
+        aiMessages = aiMessages.concat(
+            tail.map((item) => ({ role: item.role, content: item.content }))
+        );
+    } else {
+        aiMessages.push({ role: "user", content: prompt });
+    }
+
     const completion = await client.chat.completions.create({
         model: "gpt-4o-mini",
-        messages: [
-            {
-                role: "system",
-                content: `You are NOVA, an expert email marketing copywriter. ${signature}`,
-            },
-            { role: "user", content: prompt },
-        ],
+        messages: aiMessages,
     });
 
     const data = completion.choices[0]?.message?.content || "No response received.";
