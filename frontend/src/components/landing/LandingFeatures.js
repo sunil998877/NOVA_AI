@@ -22,7 +22,7 @@ export function LandingFeatures({ dark, acc }) {
           <p className={cn("text-sm font-bold uppercase tracking-[0.18em]", acc.text)}>{label}</p>
           <h2
             className={cn(
-              "mt-4 text-[3.15rem] font-extrabold leading-[0.95] tracking-tight sm:text-[4.1rem] md:text-[5.1rem] lg:text-[5.75rem] xl:text-[6.25rem]",
+              "landing-features-title mt-4 text-[3.15rem] font-extrabold leading-[0.95] tracking-tight sm:text-[4.1rem] md:text-[5.1rem] lg:text-[5.75rem] xl:text-[6.25rem]",
               dark ? "text-white" : "text-neutral-950"
             )}
           >

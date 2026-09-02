@@ -14,7 +14,7 @@ export function LandingGetStarted({ acc, authed }) {
       <div className="translate-y-[10px]">
         <h2
           className={cn(
-            "cursor-pointer select-none text-[2.85rem] font-extrabold leading-[0.92] tracking-tight sm:text-6xl md:text-7xl lg:text-[6.75rem] xl:text-[7.75rem]",
+            "landing-cta-title cursor-pointer select-none text-[2.85rem] font-extrabold leading-[0.92] tracking-tight sm:text-6xl md:text-7xl lg:text-[6.75rem] xl:text-[7.75rem]",
             acc.text
           )}
           onMouseEnter={() => setHovering(true)}

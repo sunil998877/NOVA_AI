@@ -14,7 +14,7 @@ export function LandingHero({ dark, acc, authed }) {
         <motion.h1
           variants={fadeUp}
           className={cn(
-            "text-[2.6rem] font-extrabold leading-[0.95] tracking-tight sm:text-6xl md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]",
+            "landing-hero-title text-[2.6rem] font-extrabold leading-[0.95] tracking-tight sm:text-6xl md:text-7xl lg:text-[4.75rem] xl:text-[5.25rem]",
             dark ? "text-white" : "text-neutral-950"
           )}
         >

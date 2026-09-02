@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="620" viewBox="0 0 980 620" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#EA4B71"/>
+    </marker>
+    <marker id="arrowDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333"/>
+    </marker>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#faf7f8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="980" height="620" rx="16" fill="url(#bg)" stroke="#e6e6e6" stroke-width="2"/>
+
+  <text x="490" y="42" text-anchor="middle" font-size="22" font-weight="700" fill="#141414">NOVA → n8n Email Pipeline — Architecture Flow</text>
+  <text x="490" y="66" text-anchor="middle" font-size="13" fill="#666">The backend forwards a webhook call; n8n loads recipients and sends Gmail</text>
+
+  <!-- Step 1: Frontend / Postman -->
+  <rect x="40" y="110" width="200" height="86" rx="12" fill="#1a1a2e" stroke="#2e2e4e"/>
+  <text x="140" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Frontend / Postman</text>
+  <text x="140" y="160" text-anchor="middle" font-size="11" fill="#aab">"Start Campaign" button</text>
+  <text x="140" y="176" text-anchor="middle" font-size="11" fill="#aab">campaignId, action, workMail</text>
+
+  <!-- Step 2: Nova Backend -->
+  <rect x="330" y="110" width="200" height="86" rx="12" fill="#EA4B71" stroke="#c93a5d"/>
+  <text x="430" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Nova Backend (Express)</text>
+  <text x="430" y="160" text-anchor="middle" font-size="11" fill="#ffe">POST /api/webhook</text>
+  <text x="430" y="176" text-anchor="middle" font-size="11" fill="#ffe">proxy.controller.js</text>
+
+  <!-- Step 3: n8n Webhook -->
+  <rect x="640" y="110" width="200" height="86" rx="12" fill="#8549C6" stroke="#6f3aa8"/>
+  <text x="740" y="140" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">n8n Webhook Node</text>
+  <text x="740" y="160" text-anchor="middle" font-size="11" fill="#f3e6ff">GET /webhook/<path></text>
+  <text x="740" y="176" text-anchor="middle" font-size="11" fill="#f3e6ff">Basic Auth (N8N_USER / N8N_PASSWORD)</text>
+
+  <!-- Arrows row 1 -->
+  <line x1="240" y1="153" x2="328" y2="153" stroke="#333" stroke-width="2" marker-end="url(#arrowDark)"/>
+  <text x="284" y="140" text-anchor="middle" font-size="10" fill="#444" transform="rotate(-4 284 140)">POST + JWT</text>
+
+  <line x1="530" y1="153" x2="638" y2="153" stroke="#EA4B71" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="584" y="140" text-anchor="middle" font-size="10" fill="#EA4B71" transform="rotate(-4 584 140)">GET + Basic Auth</text>
+
+  <!-- Step 4: n8n HTTP Request -->
+  <rect x="40" y="280" width="200" height="86" rx="12" fill="#ff8c42" stroke="#e0762e"/>
+  <text x="140" y="310" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">HTTP Request Node</text>
+  <text x="140" y="330" text-anchor="middle" font-size="11" fill="#fff3e8">GET /api/mails?campaignId=...</text>
+  <text x="140" y="346" text-anchor="middle" font-size="11" fill="#fff3e8">Bearer JWT header</text>
+
+  <!-- Step 5: Split Out + Set -->
+  <rect x="330" y="280" width="200" height="86" rx="12" fill="#2f80ed" stroke="#2568c4"/>
+  <text x="430" y="310" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Split Out + Edit Fields</text>
+  <text x="430" y="330" text-anchor="middle" font-size="11" fill="#e6f0ff">Split "data" → 1 row per recipient</text>
+  <text x="430" y="346" text-anchor="middle" font-size="11" fill="#e6f0ff">Map campaignId, email, subject…</text>
+
+  <!-- Step 6: Google Sheets -->
+  <rect x="640" y="280" width="200" height="86" rx="12" fill="#34a853" stroke="#298b46"/>
+  <text x="740" y="310" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Google Sheets Node</text>
+  <text x="740" y="330" text-anchor="middle" font-size="11" fill="#e6f7ea">Append Row → tab "NOVA"</text>
+  <text x="740" y="346" text-anchor="middle" font-size="11" fill="#e6f7ea">One row per recipient</text>
+
+  <!-- Arrows row 2 -->
+  <line x1="240" y1="323" x2="328" y2="323" stroke="#333" stroke-width="2" marker-end="url(#arrowDark)"/>
+  <line x1="530" y1="323" x2="638" y2="323" stroke="#333" stroke-width="2" marker-end="url(#arrowDark)"/>
+
+  <!-- Down arrow to Gmail -->
+  <line x1="740" y1="366" x2="740" y2="428" stroke="#EA4B71" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Step 7: Gmail -->
+  <rect x="640" y="430" width="200" height="86" rx="12" fill="#EA4B71" stroke="#c93a5d"/>
+  <text x="740" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">Gmail Node</text>
+  <text x="740" y="480" text-anchor="middle" font-size="11" fill="#ffe">Send → To: recipient</text>
+  <text x="740" y="496" text-anchor="middle" font-size="11" fill="#ffe">Runs once per item = all users</text>
+
+  <!-- Inbox -->
+  <rect x="40" y="430" width="200" height="86" rx="12" fill="#f2f2f7" stroke="#ccc"/>
+  <text x="140" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#141414">Recipient Inboxes</text>
+  <text x="140" y="480" text-anchor="middle" font-size="11" fill="#555">All campaign mails sent</text>
+  <text x="140" y="496" text-anchor="middle" font-size="11" fill="#555">from the workMail account</text>
+
+  <!-- Sheets -> Inbox arrow -->
+  <line x1="330" y1="473" x2="242" y2="473" stroke="#333" stroke-width="2" marker-end="url(#arrowDark)"/>
+  <text x="286" y="462" text-anchor="middle" font-size="10" fill="#444">emails sent</text>
+
+  <!-- Bottom note -->
+  <rect x="330" y="520" width="510" height="70" rx="10" fill="#fff4f5" stroke="#EA4B71" stroke-dasharray="5 4"/>
+  <text x="585" y="545" text-anchor="middle" font-size="12" font-weight="700" fill="#EA4B71">Important</text>
+  <text x="585" y="563" text-anchor="middle" font-size="11" fill="#8a3a4a">n8n Cloud cannot reach http://localhost:3000</text>
+  <text x="585" y="579" text-anchor="middle" font-size="11" fill="#8a3a4a">Use a deployed backend URL or a tunnel (ngrok) for /api/mails</text>
+</svg>

@@ -73,21 +73,21 @@ export function FilmExpand({ dark }) {
           <div className="pointer-events-none absolute -left-24 -top-24 h-96 w-96 rounded-full bg-[#ef5a2e]/25 blur-[120px] transition-all duration-1000" />
           <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-amber-500/20 blur-[120px] transition-all duration-1000" />
 
-          <div className="absolute top-6 left-6 sm:top-8 sm:left-9 z-30 flex items-center gap-3">
+          <div className="film-hud-left absolute top-6 left-6 sm:top-8 sm:left-9 z-30 flex items-center gap-3">
             <div className="flex size-7 sm:size-8 items-center justify-center rounded-xl bg-[#ef5a2e] text-white shadow-[0_4px_18px_rgba(239,90,46,0.6)]">
               <span className="size-2 sm:size-2.5 rounded-full bg-white animate-pulse" />
             </div>
             <span className="text-xs sm:text-sm font-black uppercase tracking-[0.22em] text-[#ef5a2e]">
               NOVA AI FILM
             </span>
-            <span className="rounded-full bg-white/10 border border-white/10 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold tracking-wider text-white/80">
+            <span className="film-hud-scene rounded-full bg-white/10 border border-white/10 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-bold tracking-wider text-white/80">
               SCENE 0{scene + 1} / 05
             </span>
           </div>
 
-          <div className="absolute top-6 right-6 sm:top-8 sm:right-9 z-30 flex items-center gap-2">
+          <div className="film-hud-live absolute top-6 right-6 sm:top-8 sm:right-9 z-30 flex items-center gap-2">
             <span className="size-2 rounded-full bg-[#ef5a2e] animate-ping" />
-            <span className="text-[10px] sm:text-[11px] font-bold tracking-widest text-[#ef5a2e] uppercase">
+            <span className="film-hud-live-text text-[10px] sm:text-[11px] font-bold tracking-widest text-[#ef5a2e] uppercase">
               LIVE PREVIEW • 60 FPS
             </span>
           </div>
@@ -104,7 +104,7 @@ export function FilmExpand({ dark }) {
               <span className="inline-block rounded-full bg-[#ef5a2e]/20 border border-[#ef5a2e]/40 px-4 py-1.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-[#ff7a45] mb-4 shadow-sm">
                 01 · Intelligent Campaign Launch
               </span>
-              <h2 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white drop-shadow-md">
+              <h2 className="film-hero-title text-4xl sm:text-6xl lg:text-7xl font-black leading-[1.05] tracking-tight text-white drop-shadow-md">
                 Launch campaigns. <br />
                 <span className="text-[#ef5a2e]">Watch them perform.</span>
               </h2>
@@ -135,7 +135,7 @@ export function FilmExpand({ dark }) {
           >
             <div className="w-full max-w-4xl rounded-[2.2rem] bg-[#121622] text-white border border-white/15 p-7 sm:p-10 lg:p-11 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
 
-              <div className="flex items-center justify-between border-b border-white/10 pb-5">
+              <div className="film-msg-head flex items-center justify-between border-b border-white/10 pb-5">
                 <div className="flex items-center gap-3">
                   <span className="size-3.5 rounded-full bg-[#ef5a2e] shadow-[0_0_12px_#ef5a2e]" />
                   <span className="text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-300">
@@ -178,7 +178,7 @@ export function FilmExpand({ dark }) {
             )}
           >
             <div className="grid w-full max-w-4xl gap-5 sm:gap-6 md:grid-cols-3">
-              <div className="rounded-[2rem] bg-[#ef5a2e] p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
+              <div className="film-audience-card rounded-[2rem] bg-[#ef5a2e] p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
                 <div>
                   <span className="text-[11px] font-black uppercase tracking-wider opacity-90">
                     03 · Audience Segments
@@ -191,7 +191,7 @@ export function FilmExpand({ dark }) {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] bg-[#141824] border border-white/15 p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
+              <div className="film-audience-card rounded-[2rem] bg-[#141824] border border-white/15 p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
                 <div>
                   <span className="text-[11px] font-black uppercase tracking-wider text-slate-400">
                     Predictive Tagging
@@ -204,7 +204,7 @@ export function FilmExpand({ dark }) {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] bg-[#1a1f2e] border border-white/15 p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
+              <div className="film-audience-card rounded-[2rem] bg-[#1a1f2e] border border-white/15 p-7 text-white shadow-2xl flex flex-col justify-between min-h-[250px]">
                 <div>
                   <span className="text-[11px] font-black uppercase tracking-wider text-[#ef5a2e]">
                     Smart Retargeting
@@ -228,20 +228,20 @@ export function FilmExpand({ dark }) {
             )}
           >
             <div className="w-full max-w-4xl rounded-[2.2rem] bg-[#121622] p-7 sm:p-10 lg:p-11 text-white shadow-[0_30px_80px_rgba(0,0,0,0.6)] border border-white/15">
-              <div className="flex justify-between items-center border-b border-white/10 pb-5">
+              <div className="film-telemetry-head flex justify-between items-center border-b border-white/10 pb-5">
                 <div>
                   <span className="text-xs sm:text-sm font-extrabold uppercase tracking-widest text-[#ef5a2e]">
                     04 · Live Performance Telemetry
                   </span>
-                  <h3 className="mt-1.5 text-2xl sm:text-3xl font-black">Summer Sale VIP Campaign</h3>
+                  <h3 className="film-telemetry-title mt-1.5 text-2xl sm:text-3xl font-black">Summer Sale VIP Campaign</h3>
                 </div>
-                <div className="flex items-center gap-2.5 rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs sm:text-sm font-bold text-emerald-400 border border-emerald-500/40">
+                <div className="film-telemetry-stream flex items-center gap-2.5 rounded-full bg-emerald-500/20 px-3.5 py-1 text-xs sm:text-sm font-bold text-emerald-400 border border-emerald-500/40">
                   <span className="size-2.5 rounded-full bg-emerald-400 animate-ping" />
                   STREAMING
                 </div>
               </div>
 
-              <div className="mt-7 grid grid-cols-3 gap-5 sm:gap-6">
+              <div className="film-telemetry-grid mt-7 grid grid-cols-3 gap-5 sm:gap-6">
                 <div className="rounded-2xl bg-white/5 p-5 sm:p-6 border border-white/10">
                   <p className="text-xs text-slate-400 font-medium">Inboxes Reached</p>
                   <p className="mt-2 text-2xl sm:text-4xl font-black text-white">{reachedCount.toLocaleString()}</p>

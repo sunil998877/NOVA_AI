@@ -10,7 +10,7 @@ export function LandingOverview({ dark, acc }) {
         <p className={cn("text-xs font-bold uppercase tracking-[0.18em]", acc.text)}>Overview</p>
         <h2
           className={cn(
-            "mt-2 w-max max-w-none text-[2.85rem] font-extrabold leading-[0.95] tracking-tight sm:text-[3.75rem] md:text-[4.6rem] lg:text-[5.5rem] xl:text-[6rem]",
+            "landing-overview-title mt-2 w-max max-w-none text-[2.85rem] font-extrabold leading-[0.95] tracking-tight sm:text-[3.75rem] md:text-[4.6rem] lg:text-[5.5rem] xl:text-[6rem]",
             dark ? "text-white" : "text-neutral-950"
           )}
         >
