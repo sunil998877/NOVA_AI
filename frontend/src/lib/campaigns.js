@@ -2,9 +2,14 @@ import { formatDate } from "./auth";
 
 export function normalizeCampaignStatus(campaign) {
   const status = String(campaign?.status || "").toLowerCase();
-  if (["sent", "draft", "scheduled"].includes(status)) return status;
+  if (["draft", "processing", "completed", "failed", "scheduled", "sent"].includes(status)) {
+    if (status === "sent") return "completed";
+    return status;
+  }
   const camp = String(campaign?.camp_status || "").toLowerCase();
-  if (camp.includes("sent") || camp.includes("complete")) return "sent";
+  if (camp.includes("process")) return "processing";
+  if (camp.includes("fail")) return "failed";
+  if (camp.includes("sent") || camp.includes("complete")) return "completed";
   if (camp.includes("schedul")) return "scheduled";
   if (campaign?.scheduledDate && new Date(campaign.scheduledDate) > new Date()) return "scheduled";
   return status || "draft";
@@ -16,11 +21,25 @@ export function mailsForCampaign(mails, campaignId) {
 
 export function campaignMetrics(campaign, mails = []) {
   const related = mailsForCampaign(mails, campaign.id);
-  const sent = related.filter((mail) => mail.status || mail.sent_at).length || related.length;
+  const recipients =
+    Number(campaign.total_recipients) > 0 ? Number(campaign.total_recipients) : related.length;
+  const sentFromMails = related.filter(
+    (mail) => mail.delivery_status === "sent" || mail.status || mail.sent_at
+  ).length;
+  const failedFromMails = related.filter((mail) => mail.delivery_status === "failed").length;
+  const sent =
+    campaign.sent_count !== undefined && campaign.sent_count !== null
+      ? Number(campaign.sent_count)
+      : sentFromMails;
+  const failed =
+    campaign.failed_count !== undefined && campaign.failed_count !== null
+      ? Number(campaign.failed_count)
+      : failedFromMails;
   const opened = related.filter((mail) => (mail.open_count || 0) > 0).length;
   return {
-    recipients: related.length,
+    recipients,
     sent,
+    failed,
     opened,
     unopened: Math.max(sent - opened, 0),
   };
@@ -36,7 +55,9 @@ export function toCampaignRow(campaign, mails = []) {
       (campaign.workMail ? `From ${campaign.workMail}` : "No subject yet"),
     body: campaign.body || "",
     status: normalizeCampaignStatus(campaign),
+    recipients: metrics.recipients,
     sent: metrics.sent,
+    failed: metrics.failed,
     opened: metrics.opened,
     clicked: 0,
     date: formatDate(campaign.scheduledDate || campaign.createdAt),

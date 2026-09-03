@@ -1,8 +1,20 @@
 export const campaignSchema = {
     table: "campaigns",
     columns:
-        "id, title, workMail, followups, camp_status, scheduledDate, status, subject, body, user_id, createdAt, updatedAt",
-    updatable: ["title", "workMail", "followups", "camp_status", "scheduledDate", "status", "subject", "body"],
+        "id, title, workMail, followups, camp_status, scheduledDate, status, subject, body, total_recipients, sent_count, failed_count, user_id, createdAt, updatedAt",
+    updatable: [
+        "title",
+        "workMail",
+        "followups",
+        "camp_status",
+        "scheduledDate",
+        "status",
+        "subject",
+        "body",
+        "total_recipients",
+        "sent_count",
+        "failed_count",
+    ],
     createTable: `CREATE TABLE IF NOT EXISTS campaigns (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
@@ -13,6 +25,9 @@ export const campaignSchema = {
         status VARCHAR(64) NOT NULL DEFAULT 'draft',
         subject VARCHAR(255) NULL,
         body MEDIUMTEXT NULL,
+        total_recipients INT NOT NULL DEFAULT 0,
+        sent_count INT NOT NULL DEFAULT 0,
+        failed_count INT NOT NULL DEFAULT 0,
         user_id INT NOT NULL,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

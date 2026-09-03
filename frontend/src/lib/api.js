@@ -88,14 +88,19 @@ export const campaignApi = {
   get: (id) => api(`/api/campaigns/${id}`),
   create: (body) => api("/api/campaigns/create", { method: "POST", body }),
   update: (id, body) => api(`/api/campaigns/${id}`, { method: "PATCH", body }),
+  updateStatus: (id, body) => api(`/api/campaigns/${id}/status`, { method: "PATCH", body }),
+  send: (id) => api(`/api/campaigns/${id}/send`, { method: "POST" }),
+  complete: (id, body = {}) => api(`/api/campaigns/${id}/complete`, { method: "POST", body }),
   remove: (id) => api(`/api/campaigns/${id}`, { method: "DELETE" }),
 };
 
 export const mailApi = {
   list: (campaignId) =>
     api(campaignId ? `/api/mails?campaignId=${encodeURIComponent(campaignId)}` : "/api/mails"),
+  listByCampaign: (id) => api(`/api/mails/campaign/${id}`),
   batchCreate: (campaignId, mails) =>
     api("/api/mails/batch", { method: "POST", body: { campaignId, mails } }),
+  updateStatus: (id, body) => api(`/api/mails/${id}`, { method: "PATCH", body }),
   deleteByCampaign: (id) => api(`/api/mails/campaign/${id}`, { method: "DELETE" }),
 };
 

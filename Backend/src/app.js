@@ -61,6 +61,12 @@ app.use((err, req, res, next) => {
 });
 app.use(express.urlencoded({ extended: true }));
 
+
+app.use((req, _res, next) => {
+    req.body = req.body || {};
+    next();
+});
+
 app.get("/health", (_req, res) => {
     res.status(200).send("Backend is running");
 });

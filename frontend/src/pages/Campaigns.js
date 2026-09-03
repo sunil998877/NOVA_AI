@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -12,9 +12,12 @@ import {
   Trash2,
   Send,
   Loader2,
+  UserPlus,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { Badge } from "../components/ui/badge";
 import { Card } from "../components/ui/card";
 import {
@@ -26,6 +29,13 @@ import {
   TableRow,
 } from "../components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,9 +43,17 @@ import {
   DropdownMenuTrigger,
 } from "../components/ui/dropdown-menu";
 import { CampaignFormDialog } from "../components/CampaignFormDialog";
-import { campaignApi, webhookApi } from "../lib/api";
+import { campaignApi, mailApi } from "../lib/api";
 import { useWorkspaceData } from "../hooks/useWorkspaceData";
 import { toCampaignRow } from "../lib/campaigns";
+
+function parseRecipientEmails(raw) {
+  return String(raw || "")
+    .split(/[\n,;]+/)
+    .map((email) => email.trim())
+    .filter(Boolean)
+    .map((email) => ({ email }));
+}
 
 function Campaigns() {
   const navigate = useNavigate();
@@ -48,11 +66,29 @@ function Campaigns() {
   const [formError, setFormError] = useState("");
   const [actionError, setActionError] = useState("");
   const [sendingId, setSendingId] = useState(null);
+  const [completingId, setCompletingId] = useState(null);
+  const [sendInfo, setSendInfo] = useState("");
+  const [recipientOpen, setRecipientOpen] = useState(false);
+  const [recipientCampaign, setRecipientCampaign] = useState(null);
+  const [recipientEmails, setRecipientEmails] = useState("");
+  const [recipientName, setRecipientName] = useState("");
+  const [recipientError, setRecipientError] = useState("");
+  const [savingRecipients, setSavingRecipients] = useState(false);
 
   const rows = useMemo(
     () => campaigns.map((campaign) => toCampaignRow(campaign, mails)),
     [campaigns, mails]
   );
+
+  const hasProcessing = rows.some((row) => row.status === "processing");
+
+  useEffect(() => {
+    if (!hasProcessing) return undefined;
+    const id = window.setInterval(() => {
+      reload();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [hasProcessing, reload]);
 
   const filtered = rows.filter((c) => {
     const matchesSearch =
@@ -63,13 +99,32 @@ function Campaigns() {
   });
 
   const getStatusBadge = (status) => {
-    if (status === "sent") return <Badge>Sent</Badge>;
+    if (status === "completed" || status === "sent") return <Badge>Completed</Badge>;
+    if (status === "processing") {
+      return (
+        <Badge variant="outline" className="border-amber-500/50 text-amber-600">
+          Processing
+        </Badge>
+      );
+    }
+    if (status === "failed") return <Badge variant="destructive">Failed</Badge>;
     if (status === "draft") return <Badge variant="secondary">Draft</Badge>;
-    if (status === "scheduled") return <Badge variant="outline" className="border-primary/40 text-primary">Scheduled</Badge>;
+    if (status === "scheduled") {
+      return <Badge variant="outline" className="border-primary/40 text-primary">Scheduled</Badge>;
+    }
     return <Badge variant="outline">{status}</Badge>;
   };
 
   const getRate = (num, den) => (den > 0 ? `${((num / den) * 100).toFixed(1)}%` : "0%");
+
+  const openAddRecipients = (row) => {
+    setRecipientCampaign(row);
+    setRecipientEmails("");
+    setRecipientName("");
+    setRecipientError("");
+    setRecipientOpen(true);
+    setActionError("");
+  };
 
   const handleSave = async (payload) => {
     setSaving(true);
@@ -114,23 +169,85 @@ function Campaigns() {
     }
   };
 
-  const handleStart = async (row) => {
-    setSendingId(row.id);
-    setActionError("");
+  const handleAddRecipients = async (event) => {
+    event.preventDefault();
+    if (!recipientCampaign?.id) return;
+
+    const parsed = parseRecipientEmails(recipientEmails);
+    if (parsed.length === 0) {
+      setRecipientError("Enter at least one email address");
+      return;
+    }
+
+    setSavingRecipients(true);
+    setRecipientError("");
     try {
-      await webhookApi.send({
-        campaignId: row.id,
-        action: "start_campaign",
-        workMail: row.workMail || "",
-      });
-      await campaignApi.update(row.id, { status: "sent", camp_status: "Running" });
+      const mails = parsed.map((item, index) => ({
+        email: item.email,
+        full_name: index === 0 && recipientName ? recipientName : undefined,
+      }));
+      await mailApi.batchCreate(recipientCampaign.id, mails);
+      setRecipientOpen(false);
+      setSendInfo(
+        `Added ${mails.length} recipient${mails.length === 1 ? "" : "s"} to “${recipientCampaign.name}”. You can Send now.`
+      );
       await reload();
     } catch (err) {
-      setActionError(err.message || "Could not start campaign");
+      setRecipientError(err.message || "Could not add recipients");
+    } finally {
+      setSavingRecipients(false);
+    }
+  };
+
+  const handleStart = async (row) => {
+    if (!row.recipients || row.recipients < 1) {
+      setActionError(
+        `“${row.name}” has 0 recipients. Add emails first, then click Send.`
+      );
+      openAddRecipients(row);
+      return;
+    }
+
+    setSendingId(row.id);
+    setActionError("");
+    setSendInfo("");
+    try {
+      const result = await campaignApi.send(row.id);
+      setSendInfo(
+        `Campaign #${result.campaignId}: ${result.totalRecipients} recipients · Status: ${result.status}`
+      );
+      await reload();
+    } catch (err) {
+      const message = err.message || "Could not start campaign";
+      setActionError(message);
+      if (/no recipients/i.test(message)) {
+        openAddRecipients(row);
+      }
     } finally {
       setSendingId(null);
     }
   };
+
+  const handleComplete = async (row) => {
+    setCompletingId(row.id);
+    setActionError("");
+    setSendInfo("");
+    try {
+      const result = await campaignApi.complete(row.id, { markMails: true });
+      setSendInfo(
+        `Campaign #${result.campaignId} completed · Sent: ${result.sent} · Failed: ${result.failed}`
+      );
+      await reload();
+    } catch (err) {
+      setActionError(err.message || "Could not complete campaign");
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
+  const canSend = (row) =>
+    (row.status === "draft" || row.status === "scheduled" || row.status === "failed") &&
+    row.recipients > 0;
 
   return (
     <div className="space-y-6">
@@ -155,6 +272,7 @@ function Campaigns() {
       </div>
 
       {error || actionError ? <p className="text-sm text-destructive">{actionError || error}</p> : null}
+      {sendInfo ? <p className="text-sm text-muted-foreground">{sendInfo}</p> : null}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <div className="relative w-full md:max-w-xs">
@@ -167,7 +285,7 @@ function Campaigns() {
           />
         </div>
         <div className="flex flex-wrap gap-2">
-          {["all", "sent", "draft", "scheduled"].map((status) => (
+          {["all", "draft", "processing", "completed", "failed", "scheduled"].map((status) => (
             <Button
               key={status}
               size="sm"
@@ -187,12 +305,13 @@ function Campaigns() {
             <TableRow>
               <TableHead>Campaign</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Recipients</TableHead>
               <TableHead>Sent</TableHead>
+              <TableHead>Failed</TableHead>
               <TableHead>Open Rate</TableHead>
-              <TableHead>Click Rate</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>From</TableHead>
-              <TableHead className="w-[150px]" />
+              <TableHead className="w-[180px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -215,30 +334,49 @@ function Campaigns() {
                   </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(campaign.status)}</TableCell>
-                <TableCell className="tabular-nums">{campaign.sent.toLocaleString()}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-14 overflow-hidden rounded-full bg-secondary">
-                      <div className="h-full bg-primary" style={{ width: getRate(campaign.opened, campaign.sent) }} />
-                    </div>
-                    <span className="text-xs font-semibold text-primary">{getRate(campaign.opened, campaign.sent)}</span>
-                  </div>
+                <TableCell className="tabular-nums">
+                  <span className={campaign.recipients === 0 ? "text-destructive" : ""}>
+                    {campaign.recipients.toLocaleString()}
+                  </span>
                 </TableCell>
+                <TableCell className="tabular-nums">{campaign.sent.toLocaleString()}</TableCell>
+                <TableCell className="tabular-nums">{campaign.failed.toLocaleString()}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="h-1.5 w-14 overflow-hidden rounded-full bg-secondary">
-                      <div className="h-full bg-primary" style={{ width: getRate(campaign.clicked, campaign.sent) }} />
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: getRate(campaign.opened, campaign.sent) }}
+                      />
                     </div>
-                    <span className="text-xs font-semibold text-primary">{getRate(campaign.clicked, campaign.sent)}</span>
+                    <span className="text-xs font-semibold text-primary">
+                      {getRate(campaign.opened, campaign.sent)}
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{campaign.date}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="border-primary/30 text-primary">{campaign.list}</Badge>
+                  <Badge variant="outline" className="border-primary/30 text-primary">
+                    {campaign.list}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1.5">
-                    {campaign.status !== "sent" ? (
+                    {campaign.recipients === 0 &&
+                    (campaign.status === "draft" ||
+                      campaign.status === "scheduled" ||
+                      campaign.status === "failed") ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5"
+                        onClick={() => openAddRecipients(campaign)}
+                      >
+                        <UserPlus className="size-3.5" />
+                        Add recipients
+                      </Button>
+                    ) : null}
+                    {canSend(campaign) ? (
                       <Button
                         size="sm"
                         className="h-8 gap-1.5"
@@ -253,6 +391,23 @@ function Campaigns() {
                         {sendingId === campaign.id ? "Sending..." : "Send"}
                       </Button>
                     ) : null}
+                    {campaign.status === "processing" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1.5 border-amber-500/40 text-amber-600"
+                        disabled={completingId === campaign.id}
+                        onClick={() => handleComplete(campaign)}
+                        title="Emails already sent? Mark this campaign completed"
+                      >
+                        {completingId === campaign.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="size-3.5" />
+                        )}
+                        {completingId === campaign.id ? "Updating..." : "Mark completed"}
+                      </Button>
+                    ) : null}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="size-8">
@@ -260,6 +415,17 @@ function Campaigns() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => openAddRecipients(campaign)}>
+                          <UserPlus /> Add recipients
+                        </DropdownMenuItem>
+                        {campaign.status === "processing" ? (
+                          <DropdownMenuItem onClick={() => handleComplete(campaign)}>
+                            <CheckCircle2 /> Mark completed
+                          </DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem onClick={() => navigate("/email-management")}>
+                          <Mail /> Email management
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => navigate("/email-tracking")}>
                           <Eye /> Preview
                         </DropdownMenuItem>
@@ -298,11 +464,13 @@ function Campaigns() {
             <div className="mb-3 flex size-16 items-center justify-center rounded-full bg-primary/15 text-primary">
               <Search className="size-7" />
             </div>
-            <h3 className="text-base font-semibold">{loading ? "Loading campaigns..." : "No campaigns found"}</h3>
+            <h3 className="text-base font-semibold">
+              {loading ? "Loading campaigns..." : "No campaigns found"}
+            </h3>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground">
               {loading
                 ? "Fetching your campaigns from NOVA."
-                : "Create a campaign to start sending from your connected Gmail."}
+                : "Create a campaign, add recipients, then click Send."}
             </p>
           </div>
         )}
@@ -321,6 +489,57 @@ function Campaigns() {
         title={editing ? "Edit Campaign" : "Create New Campaign"}
         submitLabel={editing ? "Save changes" : "Create Campaign"}
       />
+
+      <Dialog open={recipientOpen} onOpenChange={setRecipientOpen}>
+        <DialogContent>
+          <form onSubmit={handleAddRecipients}>
+            <DialogHeader>
+              <DialogTitle>
+                Add recipients
+                {recipientCampaign ? ` — ${recipientCampaign.name}` : ""}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <p className="text-sm text-muted-foreground">
+                This campaign has no emails yet. Add at least one recipient before sending.
+              </p>
+              <div className="grid gap-2">
+                <Label htmlFor="recipient-name">Name (optional)</Label>
+                <Input
+                  id="recipient-name"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="First recipient name"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="recipient-emails">Email(s)</Label>
+                <textarea
+                  id="recipient-emails"
+                  value={recipientEmails}
+                  onChange={(e) => setRecipientEmails(e.target.value)}
+                  placeholder={"one@example.com\ntwo@example.com"}
+                  required
+                  rows={4}
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Separate multiple emails with commas or new lines.
+                </p>
+              </div>
+              {recipientError ? <p className="text-sm text-destructive">{recipientError}</p> : null}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={() => setRecipientOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingRecipients}>
+                {savingRecipients ? "Saving..." : "Add recipients"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

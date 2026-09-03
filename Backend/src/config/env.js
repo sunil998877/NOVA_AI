@@ -45,7 +45,11 @@ export const env = {
         "",
     n8nUser: process.env.N8N_USER || "",
     n8nPassword: process.env.N8N_PASSWORD || "",
-    n8nMainWebhook: process.env.N8N_MAIN_WEBHOOK || "",
+    // Prefer N8N_WEBHOOK_URL; fall back to legacy N8N_MAIN_WEBHOOK
+    n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || process.env.N8N_MAIN_WEBHOOK || "",
+    // GET matches current n8n Webhook node; set POST after you change n8n to POST
+    n8nWebhookMethod: process.env.N8N_WEBHOOK_METHOD || "GET",
+    n8nMainWebhook: process.env.N8N_MAIN_WEBHOOK || process.env.N8N_WEBHOOK_URL || "",
     n8nFollowupWebhooks: {
         send_followup_1: process.env.N8N_FOLLOWUP_1_WEBHOOK || "",
         send_followup_2: process.env.N8N_FOLLOWUP_2_WEBHOOK || "",
