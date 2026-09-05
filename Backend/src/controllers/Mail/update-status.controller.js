@@ -9,9 +9,17 @@ export const updateMailStatus = asyncHandler(async (req, res) => {
         return res.status(404).json({ error: "Mail not found" });
     }
 
-    const campaign = await Campaign.findOwned(mail.campaign_id, req.user.id);
-    if (!campaign) {
-        return res.status(403).json({ error: "Access denied" });
+    if (req.authVia === "n8n_campaign_token") {
+        if (String(req.n8nCampaignId) !== String(mail.campaign_id)) {
+            return res.status(403).json({ error: "Token is not valid for this mail" });
+        }
+    } else if (req.authVia === "n8n_basic") {
+        // Workflow service account may update any mail it was given.
+    } else {
+        const campaign = await Campaign.findOwned(mail.campaign_id, req.user.id);
+        if (!campaign) {
+            return res.status(403).json({ error: "Access denied" });
+        }
     }
 
     const { status, sent_at, delivery_status, failed } = req.body;

@@ -95,8 +95,13 @@ export const campaignApi = {
 };
 
 export const mailApi = {
-  list: (campaignId) =>
-    api(campaignId ? `/api/mails?campaignId=${encodeURIComponent(campaignId)}` : "/api/mails"),
+  list: (campaignId, params = {}) => {
+    const query = new URLSearchParams();
+    if (campaignId) query.set("campaignId", campaignId);
+    query.set("page", String(params.page || 1));
+    query.set("limit", String(params.limit || 100));
+    return api(`/api/mails?${query}`);
+  },
   listByCampaign: (id) => api(`/api/mails/campaign/${id}`),
   batchCreate: (campaignId, mails) =>
     api("/api/mails/batch", { method: "POST", body: { campaignId, mails } }),

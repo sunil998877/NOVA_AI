@@ -14,7 +14,7 @@ export function useWorkspaceData() {
     try {
       const [campaignRes, mailRes, statsRes] = await Promise.all([
         campaignApi.list({ limit: 100 }),
-        mailApi.list(),
+        mailApi.list(undefined, { limit: 500 }),
         statsApi.performance(),
       ]);
       setCampaigns(campaignRes.data || []);

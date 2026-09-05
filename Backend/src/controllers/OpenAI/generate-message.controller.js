@@ -26,13 +26,6 @@ export const generateMessage = asyncHandler(async (req, res) => {
         ? `If you generate an email draft, end with: "Best regards, ${req.user.fullName}${req.user.organization ? `, ${req.user.organization}` : ""}".`
         : "";
 
-    await Message.create({
-        conversation_id: conversation.id,
-        user_id: req.user.id,
-        role: "user",
-        content: prompt,
-    });
-
     const systemMessage = {
         role: "system",
         content: `You are NOVA, an expert email marketing copywriter. ${signature}`,
@@ -57,6 +50,13 @@ export const generateMessage = asyncHandler(async (req, res) => {
     });
 
     const data = completion.choices[0]?.message?.content || "No response received.";
+
+    await Message.create({
+        conversation_id: conversation.id,
+        user_id: req.user.id,
+        role: "user",
+        content: prompt,
+    });
 
     await Message.create({
         conversation_id: conversation.id,

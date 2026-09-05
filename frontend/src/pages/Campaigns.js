@@ -46,6 +46,7 @@ import { CampaignFormDialog } from "../components/CampaignFormDialog";
 import { campaignApi, mailApi } from "../lib/api";
 import { useWorkspaceData } from "../hooks/useWorkspaceData";
 import { toCampaignRow } from "../lib/campaigns";
+import { useToast } from "../components/ui/toast";
 
 function parseRecipientEmails(raw) {
   return String(raw || "")
@@ -62,18 +63,17 @@ function Campaigns() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const toast = useToast();
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
-  const [actionError, setActionError] = useState("");
   const [sendingId, setSendingId] = useState(null);
   const [completingId, setCompletingId] = useState(null);
-  const [sendInfo, setSendInfo] = useState("");
   const [recipientOpen, setRecipientOpen] = useState(false);
   const [recipientCampaign, setRecipientCampaign] = useState(null);
   const [recipientEmails, setRecipientEmails] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientError, setRecipientError] = useState("");
   const [savingRecipients, setSavingRecipients] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const rows = useMemo(
     () => campaigns.map((campaign) => toCampaignRow(campaign, mails)),
@@ -123,40 +123,39 @@ function Campaigns() {
     setRecipientName("");
     setRecipientError("");
     setRecipientOpen(true);
-    setActionError("");
   };
 
   const handleSave = async (payload) => {
     setSaving(true);
-    setFormError("");
     try {
       if (editing) {
         await campaignApi.update(editing.id, payload);
+        toast.success("Campaign updated", "Your changes have been saved.");
       } else {
         await campaignApi.create(payload);
+        toast.success("Campaign created", "Your new campaign is ready.");
       }
       setShowModal(false);
       setEditing(null);
       await reload();
     } catch (err) {
-      setFormError(err.message || "Could not save campaign");
+      toast.error("Could not save campaign", err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
-    setActionError("");
     try {
       await campaignApi.remove(id);
       await reload();
+      toast.success("Campaign deleted");
     } catch (err) {
-      setActionError(err.message || "Could not delete campaign");
+      toast.error("Could not delete campaign", err.message);
     }
   };
 
   const handleDuplicate = async (row) => {
-    setActionError("");
     try {
       await campaignApi.create({
         title: `${row.name} copy`,
@@ -164,21 +163,20 @@ function Campaigns() {
         status: "draft",
       });
       await reload();
+      toast.success("Campaign duplicated", `"${row.name} copy" is ready.`);
     } catch (err) {
-      setActionError(err.message || "Could not duplicate campaign");
+      toast.error("Could not duplicate campaign", err.message);
     }
   };
 
   const handleAddRecipients = async (event) => {
     event.preventDefault();
     if (!recipientCampaign?.id) return;
-
     const parsed = parseRecipientEmails(recipientEmails);
     if (parsed.length === 0) {
       setRecipientError("Enter at least one email address");
       return;
     }
-
     setSavingRecipients(true);
     setRecipientError("");
     try {
@@ -188,8 +186,9 @@ function Campaigns() {
       }));
       await mailApi.batchCreate(recipientCampaign.id, mails);
       setRecipientOpen(false);
-      setSendInfo(
-        `Added ${mails.length} recipient${mails.length === 1 ? "" : "s"} to “${recipientCampaign.name}”. You can Send now.`
+      toast.success(
+        "Recipients added",
+        `Added ${mails.length} recipient${mails.length === 1 ? "" : "s"} to "${recipientCampaign.name}". You can Send now.`
       );
       await reload();
     } catch (err) {
@@ -201,28 +200,22 @@ function Campaigns() {
 
   const handleStart = async (row) => {
     if (!row.recipients || row.recipients < 1) {
-      setActionError(
-        `“${row.name}” has 0 recipients. Add emails first, then click Send.`
-      );
+      toast.warning("No recipients", `"${row.name}" has 0 recipients. Add emails first.`);
       openAddRecipients(row);
       return;
     }
-
     setSendingId(row.id);
-    setActionError("");
-    setSendInfo("");
     try {
       const result = await campaignApi.send(row.id);
-      setSendInfo(
-        `Campaign #${result.campaignId}: ${result.totalRecipients} recipients · Status: ${result.status}`
+      toast.success(
+        "Campaign sending!",
+        `${result.totalRecipients} recipient${result.totalRecipients === 1 ? "" : "s"} queued · Status: ${result.status}`
       );
       await reload();
     } catch (err) {
       const message = err.message || "Could not start campaign";
-      setActionError(message);
-      if (/no recipients/i.test(message)) {
-        openAddRecipients(row);
-      }
+      toast.error("Send failed", message);
+      if (/no recipients/i.test(message)) openAddRecipients(row);
     } finally {
       setSendingId(null);
     }
@@ -230,16 +223,15 @@ function Campaigns() {
 
   const handleComplete = async (row) => {
     setCompletingId(row.id);
-    setActionError("");
-    setSendInfo("");
     try {
       const result = await campaignApi.complete(row.id, { markMails: true });
-      setSendInfo(
-        `Campaign #${result.campaignId} completed · Sent: ${result.sent} · Failed: ${result.failed}`
+      toast.success(
+        "Campaign completed",
+        `Sent: ${result.sent} · Failed: ${result.failed}`
       );
       await reload();
     } catch (err) {
-      setActionError(err.message || "Could not complete campaign");
+      toast.error("Could not complete campaign", err.message);
     } finally {
       setCompletingId(null);
     }
@@ -261,7 +253,7 @@ function Campaigns() {
         <Button
           onClick={() => {
             setEditing(null);
-            setFormError("");
+            setFormError(null);
             setShowModal(true);
           }}
           className="w-full sm:w-auto"
@@ -271,8 +263,7 @@ function Campaigns() {
         </Button>
       </div>
 
-      {error || actionError ? <p className="text-sm text-destructive">{actionError || error}</p> : null}
-      {sendInfo ? <p className="text-sm text-muted-foreground">{sendInfo}</p> : null}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <div className="relative w-full md:max-w-xs">
@@ -363,9 +354,9 @@ function Campaigns() {
                 <TableCell>
                   <div className="flex items-center justify-end gap-1.5">
                     {campaign.recipients === 0 &&
-                    (campaign.status === "draft" ||
-                      campaign.status === "scheduled" ||
-                      campaign.status === "failed") ? (
+                      (campaign.status === "draft" ||
+                        campaign.status === "scheduled" ||
+                        campaign.status === "failed") ? (
                       <Button
                         size="sm"
                         variant="outline"
@@ -484,7 +475,7 @@ function Campaigns() {
         }}
         onSubmit={handleSave}
         submitting={saving}
-        error={formError}
+        error={""}
         initial={editing}
         title={editing ? "Edit Campaign" : "Create New Campaign"}
         submitLabel={editing ? "Save changes" : "Create Campaign"}

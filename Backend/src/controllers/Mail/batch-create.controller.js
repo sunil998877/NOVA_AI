@@ -7,6 +7,13 @@ export const batchCreateMails = asyncHandler(async (req, res) => {
     if (!campaignId || !Array.isArray(mails) || mails.length === 0) {
         return res.status(400).json({ error: "campaignId and mails[] are required" });
     }
+    if (mails.length > 1000) {
+        return res.status(413).json({ error: "A maximum of 1000 mails can be added per request" });
+    }
+    const invalid = mails.find((mail) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(mail.email || "").trim()));
+    if (invalid) {
+        return res.status(400).json({ error: "Every mail must contain a valid email address" });
+    }
 
     const campaign = await Campaign.findOwned(campaignId, req.user.id);
     if (!campaign) {
@@ -24,5 +31,8 @@ export const batchCreateMails = asyncHandler(async (req, res) => {
     }));
 
     const data = await Mail.insertMany(docs);
+    await Campaign.updateById(campaign.id, {
+        total_recipients: await Mail.countByCampaignId(campaign.id),
+    });
     return res.status(201).json({ data });
 });

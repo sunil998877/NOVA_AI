@@ -21,8 +21,13 @@ export function mailsForCampaign(mails, campaignId) {
 
 export function campaignMetrics(campaign, mails = []) {
   const related = mailsForCampaign(mails, campaign.id);
+  // Prefer real mail rows so Send/UI aren't fooled by a stale total_recipients.
   const recipients =
-    Number(campaign.total_recipients) > 0 ? Number(campaign.total_recipients) : related.length;
+    related.length > 0
+      ? related.length
+      : Number(campaign.total_recipients) > 0
+        ? Number(campaign.total_recipients)
+        : 0;
   const sentFromMails = related.filter(
     (mail) => mail.delivery_status === "sent" || mail.status || mail.sent_at
   ).length;

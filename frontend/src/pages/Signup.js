@@ -9,6 +9,7 @@ import { AuthDivider, GoogleSignInButton } from "../components/GoogleSignInButto
 import { Recaptcha } from "../components/Recaptcha";
 import { authApi } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import { useToast } from "../components/ui/toast";
 
 function Signup() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ function Signup() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   const credentialsReady =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
     form.password.length >= 8 &&
@@ -62,8 +64,10 @@ function Signup() {
         captchaToken: token,
       });
       applySession(result.token, result.user);
+      toast.success("Account created!", "Welcome to NOVA Email Marketer.");
       navigate("/dashboard");
     } catch (err) {
+      toast.error("Sign up failed", err.message || "Could not create account");
       setError(err.message || "Could not create account");
       recaptchaRef.current?.reset();
       setCaptchaToken("");

@@ -6,7 +6,18 @@ const ALLOWED = new Set(["draft", "processing", "completed", "failed", "sent", "
 
 export const updateCampaignStatus = asyncHandler(async (req, res) => {
     const campaignId = req.params.campaignId || req.params.id || req.body.campaignId;
-    const campaign = await Campaign.findOwned(campaignId, req.user.id);
+
+    let campaign;
+    if (req.authVia === "n8n_basic") {
+        campaign = await Campaign.findById(campaignId);
+    } else if (req.authVia === "n8n_campaign_token") {
+        if (String(req.n8nCampaignId) !== String(campaignId)) {
+            return res.status(403).json({ error: "Token is not valid for this campaign" });
+        }
+        campaign = await Campaign.findById(campaignId);
+    } else {
+        campaign = await Campaign.findOwned(campaignId, req.user.id);
+    }
 
     if (!campaign) {
         return res.status(403).json({ error: "Access denied: You do not own this campaign" });
@@ -51,7 +62,9 @@ export const updateCampaignStatus = asyncHandler(async (req, res) => {
     };
 
     const updated = await Campaign.updateById(campaign.id, fields);
-    await audit(req.user.id, "CAMPAIGN_STATUS", campaign.id, req.ip);
+    if (req.user?.id && req.user.id !== "n8n") {
+        await audit(req.user.id, "CAMPAIGN_STATUS", campaign.id, req.ip);
+    }
 
     return res.status(200).json({
         success: true,

@@ -26,10 +26,6 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
-      // Dev server stays on Vite's default port 5173. Google OAuth client
-      // selection is origin-aware in GoogleSignInButton.js: on port 5173 the
-      // frontend uses GOOGLE_CLIENT_ID_ALT (which has 5173 registered as an
-      // authorized JavaScript origin).
       proxy: {
         "/api": {
           target: "http://localhost:3001",

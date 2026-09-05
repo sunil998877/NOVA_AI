@@ -27,7 +27,7 @@ export const env = {
         host: process.env.MYSQL_HOST || "127.0.0.1",
         port: Number(process.env.MYSQL_PORT || 3306),
         user: process.env.MYSQL_USER || "root",
-        password: process.env.MYSQL_PASSWORD || "Sunil@123",
+        password: process.env.MYSQL_PASSWORD || "",
         database: process.env.MYSQL_DATABASE || "nova_ai",
     },
     jwtSecret: process.env.JWT_SECRET || "",
@@ -45,10 +45,10 @@ export const env = {
         "",
     n8nUser: process.env.N8N_USER || "",
     n8nPassword: process.env.N8N_PASSWORD || "",
-    // Prefer N8N_WEBHOOK_URL; fall back to legacy N8N_MAIN_WEBHOOK
+    requestTimeoutMs: Number(process.env.REQUEST_TIMEOUT_MS || 15_000),
+    openaiTimeoutMs: Number(process.env.OPENAI_TIMEOUT_MS || 45_000),
     n8nWebhookUrl: process.env.N8N_WEBHOOK_URL || process.env.N8N_MAIN_WEBHOOK || "",
-    // GET matches current n8n Webhook node; set POST after you change n8n to POST
-    n8nWebhookMethod: process.env.N8N_WEBHOOK_METHOD || "GET",
+    n8nWebhookMethod: process.env.N8N_WEBHOOK_METHOD || "POST",
     n8nMainWebhook: process.env.N8N_MAIN_WEBHOOK || process.env.N8N_WEBHOOK_URL || "",
     n8nFollowupWebhooks: {
         send_followup_1: process.env.N8N_FOLLOWUP_1_WEBHOOK || "",
@@ -57,3 +57,14 @@ export const env = {
         send_followup_4: process.env.N8N_FOLLOWUP_4_WEBHOOK || "",
     },
 };
+
+if (env.nodeEnv === "production") {
+    const missing = [];
+    if (!env.jwtSecret || env.jwtSecret.length < 32) missing.push("JWT_SECRET (minimum 32 characters)");
+    if (!env.mysql.password) missing.push("MYSQL_PASSWORD");
+    if (!process.env.ALLOWED_ORIGINS) missing.push("ALLOWED_ORIGINS");
+
+    if (missing.length > 0) {
+        throw new Error(`Missing or insecure production configuration: ${missing.join(", ")}`);
+    }
+}

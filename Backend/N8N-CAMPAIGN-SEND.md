@@ -5,20 +5,27 @@
 ```
 Frontend Send
   → POST /api/campaigns/:campaignId/send   (JWT)
-  → Backend counts mails, sets status=processing
-  → POST N8N_WEBHOOK_URL  { campaignId, subject, body, workMail, ... }
-  → n8n fetches GET /api/mails/campaign/:id
-  → Split Out → Loop → Gmail (1 recipient each)
-  → PATCH /api/mails/:id  (per send)
+  → Backend loads mails, sets status=processing
+  → POST N8N_WEBHOOK_URL  JSON {
+        campaignId, subject, body, workMail,
+        recipients: [{ id, email, full_name }],
+        data: [...], accessToken, apiBaseUrl
+      }
+  → n8n Split Out on `data` or `recipients` → Loop → Gmail
+  → PATCH /api/mails/:id  (Bearer accessToken or n8n Basic Auth)
   → PATCH /api/campaigns/:id/status  (when done)
 ```
+
+**Important:** Use a **POST** Webhook in n8n. GET cannot carry recipients or email body, so Gmail never gets anyone to send to.
 
 ## Env
 
 ```env
 N8N_WEBHOOK_URL=https://YOUR-N8N-HOST/webhook/YOUR-PATH
+N8N_WEBHOOK_METHOD=POST
 N8N_USER=Nova
 N8N_PASSWORD=your_password
+PUBLIC_API_URL=https://your-public-api-or-ngrok
 ```
 
 `N8N_MAIN_WEBHOOK` still works as a fallback.
@@ -27,32 +34,12 @@ N8N_PASSWORD=your_password
 
 | Setting | Value |
 |---|---|
-| HTTP Method | **GET** (current Nova default) or **POST** if you set `N8N_WEBHOOK_METHOD=POST` |
+| HTTP Method | **POST** (required for recipients + body) |
 | Authentication | Basic Auth (`N8N_USER` / `N8N_PASSWORD`) |
 | Path | your production path |
 | Respond | Immediately or When Last Node Finishes |
 
-### GET (default — matches your current workflow)
-
-Nova calls:
-
-```
-GET /webhook/...?campaignId=6&action=start_campaign&workMail=...&timestamp=...
-```
-
-Read in n8n:
-
-`{{ $json.query.campaignId }}`
-
-### POST (optional)
-
-Set in `.env`:
-
-```env
-N8N_WEBHOOK_METHOD=POST
-```
-
-Then change the Webhook node HTTP Method to **POST**. Body:
+### POST body (from Nova)
 
 ```json
 {
@@ -61,59 +48,46 @@ Then change the Webhook node HTTP Method to **POST**. Body:
   "subject": "...",
   "body": "...",
   "action": "start_campaign",
-  "totalRecipients": 100
+  "totalRecipients": 2,
+  "accessToken": "<short-lived JWT for callbacks>",
+  "apiBaseUrl": "https://your-api",
+  "recipients": [{ "id": 1, "email": "a@x.com", "full_name": "" }],
+  "data": [{ "id": 1, "email": "a@x.com", "full_name": "", "campaign_id": 6, "subject": "...", "body": "..." }]
 }
 ```
 
-Read campaign id as:
+Read fields as `{{ $json.body.subject }}` / `{{ $json.subject }}` depending on n8n version.
 
-`{{ $json.body.campaignId }}`  
-(or `{{ $json.campaignId }}` depending on n8n version)
+## Split Out (preferred — no HTTP back to API)
 
-## HTTP Request — all recipients
+**Field to Split Out:** `data` (or `recipients`)  
+→ one item per recipient. Gmail To = `{{ $json.email }}`.
+
+## Optional HTTP Request — fetch recipients
+
+Only needed if you keep a GET webhook (not recommended):
 
 | Field | Value |
 |---|---|
 | Method | GET |
-| URL | `https://YOUR-PUBLIC-API/api/mails/campaign/{{ $json.body.campaignId }}` |
-| Header | `Authorization: Bearer <JWT>` |
-| Header | `ngrok-skip-browser-warning: true` (if using ngrok) |
-
-Response:
-
-```json
-{ "data": [ { "id", "campaign_id", "email", "full_name", ... } ], "total": N, "subject", "body" }
-```
-
-## Split Out
-
-**Field to Split Out:** `data`  
-→ 100 recipients = 100 items
-
-## Edit Fields (optional)
-
-Map `email`, `id`, and pull subject/body from Webhook or HTTP Request node.
-
-## Loop Over Items
-
-- Put **Gmail** on the **loop** branch  
-- After Gmail: **PATCH mail status**, then **Update Sheet**  
-- Wire back into Loop  
-- On **done**: **PATCH /api/campaigns/:id/status**
+| URL | `{{ $json.apiBaseUrl }}/api/mails/campaign/{{ $json.campaignId }}` |
+| Header | `Authorization: Bearer {{ $json.accessToken }}` |
 
 ## Gmail (loop branch)
 
 | Field | Value |
 |---|---|
 | To | `{{ $json.email }}` |
-| Subject | `{{ $('Webhook').item.json.body.subject }}` |
-| Message | `{{ $('Webhook').item.json.body.body }}` |
+| Subject | `{{ $('Webhook').item.json.body.subject }}` or `{{ $json.subject }}` |
+| Message | `{{ $('Webhook').item.json.body.body }}` or `{{ $json.body }}` |
 
 One recipient per iteration — never put all emails in To.
 
 ## Per-recipient tracking
 
-`PATCH /api/mails/{{ $json.id }}`
+`PATCH {{ $json.apiBaseUrl || 'https://YOUR-API' }}/api/mails/{{ $json.id }}`
+
+Header: `Authorization: Bearer {{ $('Webhook').item.json.body.accessToken }}`
 
 Success:
 
@@ -129,7 +103,7 @@ Failure:
 
 ## Final campaign status (done branch)
 
-`PATCH /api/campaigns/{{ campaignId }}/status`
+`PATCH .../api/campaigns/{{ campaignId }}/status`
 
 ```json
 {

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/auth.middleware.js";
+import { authenticate, authenticateUserOrN8n } from "../middleware/auth.middleware.js";
 import { listCampaigns } from "../controllers/Campaign/list.controller.js";
 import { getCampaign } from "../controllers/Campaign/get.controller.js";
 import { createCampaign } from "../controllers/Campaign/create.controller.js";
@@ -15,7 +15,7 @@ router.get("/list", authenticate, listCampaigns);
 router.post("/create", authenticate, createCampaign);
 router.post("/:campaignId/send", authenticate, sendCampaign);
 router.post("/:campaignId/complete", authenticate, completeCampaign);
-router.patch("/:campaignId/status", authenticate, updateCampaignStatus);
+router.patch("/:campaignId/status", authenticateUserOrN8n, updateCampaignStatus);
 router.get("/:id", authenticate, getCampaign);
 router.put("/:id", authenticate, updateCampaign);
 router.patch("/:id", authenticate, updateCampaign);

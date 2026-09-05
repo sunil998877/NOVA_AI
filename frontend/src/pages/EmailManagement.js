@@ -26,6 +26,7 @@ import { campaignApi, mailApi } from "../lib/api";
 import { useWorkspaceData } from "../hooks/useWorkspaceData";
 import { campaignMetrics } from "../lib/campaigns";
 import { formatDate as formatStamp } from "../lib/auth";
+import { useToast } from "../components/ui/toast";
 
 const templates = [
   { name: "Welcome Series", type: "Automation" },
@@ -43,15 +44,16 @@ const tabs = [
 function EmailManagement() {
   const { user } = useAuth();
   const { campaigns, mails, loading, error, reload } = useWorkspaceData();
+  const toast = useToast();
   const [tab, setTab] = useState("lists");
   const [query, setQuery] = useState("");
   const [showCampaign, setShowCampaign] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState("");
   const [recipientOpen, setRecipientOpen] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState("");
   const [recipient, setRecipient] = useState({ email: "", fullName: "" });
   const [recipientError, setRecipientError] = useState("");
+  const [formError, setFormError] = useState("");
 
   const lists = useMemo(
     () =>
@@ -95,13 +97,13 @@ function EmailManagement() {
 
   const handleCreateList = async (payload) => {
     setSaving(true);
-    setFormError("");
     try {
       await campaignApi.create(payload);
       setShowCampaign(false);
       await reload();
+      toast.success("List created", "Your new email list is ready.");
     } catch (err) {
-      setFormError(err.message || "Could not create list");
+      toast.error("Could not create list", err.message);
     } finally {
       setSaving(false);
     }
@@ -119,8 +121,10 @@ function EmailManagement() {
       setRecipientOpen(false);
       setRecipient({ email: "", fullName: "" });
       await reload();
+      toast.success("Recipient added", `${recipient.email} added successfully.`);
     } catch (err) {
       setRecipientError(err.message || "Could not add recipient");
+      toast.error("Could not add recipient", err.message);
     } finally {
       setSaving(false);
     }

@@ -1,12 +1,14 @@
 import { env } from "../../config/env.js";
+import { fetchWithTimeout } from "../../utils/fetch.js";
 import { Campaign } from "../../models/campaign.model.js";
 import { Mail } from "../../models/mail.model.js";
 import { audit } from "../../utils/audit.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { signCampaignSendToken } from "../../utils/campaign-send-token.js";
 
 async function callN8nWebhook(payload) {
     const webhookUrl = env.n8nWebhookUrl;
-    const method = String(env.n8nWebhookMethod || "GET").toUpperCase();
+    const method = String(env.n8nWebhookMethod || "POST").toUpperCase();
     const headers = {
         "User-Agent": "NovaAI-Backend/1.0",
     };
@@ -15,16 +17,18 @@ async function callN8nWebhook(payload) {
         headers.Authorization = `Basic ${Buffer.from(`${env.n8nUser}:${env.n8nPassword}`).toString("base64")}`;
     }
 
-    if (method === "POST") {
+    if (method !== "GET") {
         headers["Content-Type"] = "application/json";
-        return fetch(webhookUrl, {
+        console.log("[n8n] POST →", webhookUrl);
+        const res = await fetchWithTimeout(webhookUrl, {
             method: "POST",
             headers,
             body: JSON.stringify(payload),
         });
+        console.log("[n8n] POST response:", res.status);
+        return res;
     }
 
-    // Default: GET — matches the current n8n Webhook node (HTTP Method = GET)
     const query = new URLSearchParams({
         campaignId: String(payload.campaignId),
         action: payload.action || "start_campaign",
@@ -33,12 +37,21 @@ async function callN8nWebhook(payload) {
     });
     if (payload.workMail) query.set("workMail", payload.workMail);
     if (payload.subject) query.set("subject", payload.subject);
+    if (payload.body) query.set("body", payload.body);
+    if (payload.accessToken) query.set("accessToken", payload.accessToken);
+    if (payload.apiBaseUrl) query.set("apiBaseUrl", payload.apiBaseUrl);
+    if (payload.recipients) query.set("recipients", JSON.stringify(payload.recipients));
 
-    return fetch(`${webhookUrl}?${query}`, {
+    const fullUrl = `${webhookUrl}?${query}`;
+    console.log("[n8n] GET →", webhookUrl, "| campaignId:", payload.campaignId, "| recipients:", payload.totalRecipients);
+    const res = await fetchWithTimeout(fullUrl, {
         method: "GET",
         headers,
     });
+    console.log("[n8n] GET response:", res.status);
+    return res;
 }
+
 
 export const sendCampaign = asyncHandler(async (req, res) => {
     const campaignId = req.params.campaignId || req.params.id;
@@ -81,6 +94,17 @@ export const sendCampaign = asyncHandler(async (req, res) => {
         failed_count: 0,
     });
 
+    const accessToken = signCampaignSendToken({
+        campaignId: campaign.id,
+        userId: req.user.id,
+    });
+
+    const apiBaseUrl = (
+        process.env.PUBLIC_API_URL ||
+        process.env.VITE_BACKEND_URL ||
+        `${req.protocol}://${req.get("host")}`
+    ).replace(/\/$/, "");
+
     const payload = {
         campaignId: campaign.id,
         workMail: campaign.workMail || "",
@@ -89,6 +113,21 @@ export const sendCampaign = asyncHandler(async (req, res) => {
         action: "start_campaign",
         totalRecipients,
         timestamp: new Date().toISOString(),
+        accessToken,
+        apiBaseUrl,
+        recipients: recipients.map((mail) => ({
+            id: mail.id,
+            email: mail.email,
+            full_name: mail.full_name || "",
+        })),
+        data: recipients.map((mail) => ({
+            id: mail.id,
+            email: mail.email,
+            full_name: mail.full_name || "",
+            campaign_id: campaign.id,
+            subject: campaign.subject || "",
+            body: campaign.body || "",
+        })),
     };
 
     let n8nResponse;
@@ -112,7 +151,6 @@ export const sendCampaign = asyncHandler(async (req, res) => {
     try {
         data = JSON.parse(text);
     } catch {
-        /* keep raw text */
     }
 
     if (!n8nResponse.ok) {
@@ -131,8 +169,8 @@ export const sendCampaign = asyncHandler(async (req, res) => {
             totalRecipients,
             status: "failed",
             hint:
-                /POST/i.test(String(n8nMessage))
-                    ? "Your n8n Webhook is GET-only. Backend now defaults to GET. Set N8N_WEBHOOK_METHOD=POST only after you change the Webhook node to POST."
+                /GET|POST/i.test(String(n8nMessage))
+                    ? "Set N8N_WEBHOOK_METHOD to match your n8n Webhook node."
                     : "Check Webhook is Published, path matches N8N_WEBHOOK_URL, and Basic Auth matches N8N_USER / N8N_PASSWORD.",
             data,
         });

@@ -21,11 +21,13 @@ import {
 } from "../components/ui/dropdown-menu";
 import { influencerApi } from "../lib/api";
 import { formatDate } from "../lib/auth";
+import { useToast } from "../components/ui/toast";
 
 function MyInfluencers() {
   const [influencers, setInfluencers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const toast = useToast();
 
   const load = async () => {
     setLoading(true);
@@ -55,8 +57,9 @@ function MyInfluencers() {
     try {
       await influencerApi.remove(id);
       setInfluencers((prev) => prev.filter((inf) => inf.id !== id));
+      toast.success("Influencer removed");
     } catch (err) {
-      setError(err.message || "Could not remove influencer");
+      toast.error("Could not remove influencer", err.message);
     }
   };
 
@@ -66,8 +69,9 @@ function MyInfluencers() {
     try {
       const updated = await influencerApi.update(inf.id, { status: next, lastContact: new Date().toISOString() });
       setInfluencers((prev) => prev.map((item) => (item.id === inf.id ? updated : item)));
+      toast.info("Status updated", `Moved to ${next}.`);
     } catch (err) {
-      setError(err.message || "Could not update status");
+      toast.error("Could not update status", err.message);
     }
   };
 

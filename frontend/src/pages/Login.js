@@ -9,6 +9,7 @@ import { AuthDivider, GoogleSignInButton } from "../components/GoogleSignInButto
 import { Recaptcha } from "../components/Recaptcha";
 import { authApi } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
+import { useToast } from "../components/ui/toast";
 
 function Login() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ function Login() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
   const credentialsReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length > 0;
 
   useEffect(() => {
@@ -43,8 +45,10 @@ function Login() {
     try {
       const result = await authApi.signin({ email, password, captchaToken: token });
       applySession(result.token, result.user);
+      toast.success("Welcome back!", "Signed in successfully.");
       navigate("/dashboard");
     } catch (err) {
+      toast.error("Sign in failed", err.message || "Could not sign in");
       setError(err.message || "Could not sign in");
       recaptchaRef.current?.reset();
       setCaptchaToken("");

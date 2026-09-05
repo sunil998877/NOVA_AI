@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { fetchWithTimeout } from "../../utils/fetch.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 
 const ACTION_URLS = {
@@ -37,7 +38,7 @@ export const proxyWebhook = asyncHandler(async (req, res) => {
     if (workMail) queryParams.append("workMail", workMail);
 
     const auth = Buffer.from(`${env.n8nUser}:${env.n8nPassword}`).toString("base64");
-    const response = await fetch(`${webhookUrl}?${queryParams}`, {
+    const response = await fetchWithTimeout(`${webhookUrl}?${queryParams}`, {
         method: "GET",
         headers: {
             Authorization: `Basic ${auth}`,

@@ -7,7 +7,8 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
+    "check": "node --check src/server.js",
     "start": "node src/server.js",
     "dev": "nodemon --exec node src/server.js"
   },
@@ -21,8 +22,10 @@
     "json5": "^2.2.3",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.24.2",
-    "nodemon": "^3.1.14",
     "openai": "^7.5.0",
     "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }

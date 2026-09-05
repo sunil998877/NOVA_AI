@@ -1,24 +1,24 @@
-import React, { useEffect } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import { Routes, Route, Outlet, Navigate } from "react-router-dom";
 import { SidebarInset, SidebarProvider } from "./components/ui/sidebar";
 import AppSidebar from "./components/AppSidebar";
 import SiteHeader from "./components/SiteHeader";
-import Landing from "./pages/Landing";
-import Dashboard from "./pages/Dashboard";
-import DashboardView from "./pages/DashboardView";
-import Campaigns from "./pages/Campaigns";
-import CampaignAnalytics from "./pages/CampaignAnalytics";
-import MessageCrafter from "./pages/MessageCrafter";
-import MessageCrafting from "./pages/MessageCrafting";
-import FindInfluencers from "./pages/FindInfluencers";
-import MyInfluencers from "./pages/MyInfluencers";
-import EmailManagement from "./pages/EmailManagement";
-import EmailTracking from "./pages/EmailTracking";
-import NewsletterTracking from "./pages/NewsletterTracking";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import UpdatePassword from "./pages/UpdatePassword";
+const Landing = lazy(() => import("./pages/Landing"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DashboardView = lazy(() => import("./pages/DashboardView"));
+const Campaigns = lazy(() => import("./pages/Campaigns"));
+const CampaignAnalytics = lazy(() => import("./pages/CampaignAnalytics"));
+const MessageCrafter = lazy(() => import("./pages/MessageCrafter"));
+const MessageCrafting = lazy(() => import("./pages/MessageCrafting"));
+const FindInfluencers = lazy(() => import("./pages/FindInfluencers"));
+const MyInfluencers = lazy(() => import("./pages/MyInfluencers"));
+const EmailManagement = lazy(() => import("./pages/EmailManagement"));
+const EmailTracking = lazy(() => import("./pages/EmailTracking"));
+const NewsletterTracking = lazy(() => import("./pages/NewsletterTracking"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 import { useAuth } from "./lib/AuthContext";
 import { applyTheme, getTheme } from "./lib/theme";
 
@@ -50,7 +50,8 @@ function App() {
   }, []);
 
   return (
-    <Routes>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}>
+      <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
@@ -69,7 +70,8 @@ function App() {
         <Route path="/find-influencers" element={<FindInfluencers />} />
         <Route path="/my-influencers" element={<MyInfluencers />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }
 
