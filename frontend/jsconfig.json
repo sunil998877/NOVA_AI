@@ -1,8 +1,21 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
-      "*": ["./src/*"]
-    }
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "checkJs": false,
+    "types": []
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.less",
+    "**/*.css",
+    "**/*.scss"
+  ]
 }
