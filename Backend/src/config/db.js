@@ -77,11 +77,15 @@ export const connectDb = async () => {
     const { host, port, user, password, database } = env.mysql;
 
     try {
-        const bootstrap = await mysql.createConnection({ host, port, user, password });
-        await bootstrap.query(
-            `CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-        );
-        await bootstrap.end();
+        try {
+            const bootstrap = await mysql.createConnection({ host, port, user, password });
+            await bootstrap.query(
+                `CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+            );
+            await bootstrap.end();
+        } catch (error) {
+            console.error("Could not create database:", error.message);
+        }
 
         pool = mysql.createPool({
             host,
