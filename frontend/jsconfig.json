@@ -7,7 +7,11 @@
       ]
     },
     "checkJs": false,
-    "types": []
+    "allowJs": true,
+    "skipLibCheck": true,
+    "noResolve": true,
+    "types": [],
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": [
     "src"

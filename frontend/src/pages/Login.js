@@ -10,6 +10,7 @@ import { Recaptcha } from "../components/Recaptcha";
 import { authApi } from "../lib/api";
 import { useAuth } from "../lib/AuthContext";
 import { useToast } from "../components/ui/toast";
+import { Eye, EyeOff } from "lucide-react";
 
 function Login() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ function Login() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const toast = useToast();
   const credentialsReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length > 0;
 
@@ -89,18 +91,27 @@ function Login() {
             </div>
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" >Password</Label>
                 <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                   Forgot password?
                 </Link>
               </div>
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="rounded-md px-2.5 py-1.5 text-muted-foreground hover:bg-muted"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
               />
             </div>
             {credentialsReady ? <Recaptcha ref={recaptchaRef} onToken={setCaptchaToken} /> : null}

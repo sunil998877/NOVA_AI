@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -25,6 +26,8 @@ function Signup() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const toast = useToast();
   const credentialsReady =
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
@@ -130,23 +133,41 @@ function Signup() {
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="At least 8 characters"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 minLength={8}
                 required
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="rounded-md px-2.5 py-1.5 text-muted-foreground hover:bg-muted"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="confirm">Confirm password</Label>
               <Input
                 id="confirm"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 placeholder="Repeat password"
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
                 required
+                suffix={
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="rounded-md px-2.5 py-1.5 text-muted-foreground hover:bg-muted"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                }
               />
             </div>
             {credentialsReady ? <Recaptcha ref={recaptchaRef} onToken={setCaptchaToken} /> : null}
